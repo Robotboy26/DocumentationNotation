@@ -1,4 +1,6 @@
 from  WFT import wft
+import urllib
+from urllib import request
 
 notifiers = ["-", "--", "!-", "#-"]
 
@@ -36,42 +38,61 @@ def findfile(readlines, ofile):
 
             wft("t.tmp", ofile, filename)
 
+def findLines(lines):
+    outlines = []
+    inHighlightBlock = False
+    for line in lines:
+        if line == "-" and not inHighlightBlock or line == "#-" and not inHighlightBlock or line.startswith("!--") and not inHighlightBlock or line.startswith("---") and not inHighlightBlock:
+            inHighlightBlock = True
+
+        elif line == "-" and inHighlightBlock or line == "#-" and inHighlightBlock or line.startswith("!--") and inHighlightBlock or line.startswith("---") and inHighlightBlock:
+            inHighlightBlock = False
+        else:
+            if inHighlightBlock:
+                outlines.append(line)
+            else:
+                continue
+
+    return "\n".join(outlines)
+
+
+def downloadFromWeb(urlList, fileList):
+    for url in urlList:
+        response = urllib.request.urlopen(url)
+        data = response.read()
+        text = data.decode('utf-8')
+        with open(fileList[urlList.index(url)], "w") as outFile:
+            outFile.write(text)
+
 def main():
     out = []
-    filename = input("type the filename to parse: ")
+    inputFile = input("type the filename to parse: ")
     ofile = input("type the file you want to output to or leave black for standard output: ")
+
+    enableGithubFetch = True
+    urlList = ['https://raw.githubusercontent.com/Robotboy26/myOSBlog/main/src/docs/part1.dn']
+    fileList = ["part1.dn"]
+
+    if enableGithubFetch:
+        downloadFromWeb(urlList, fileList)
+        inputFile = fileList[0]
+
+    if inputFile == "":
+        inputFile = "part1.dn"
 
     if ofile == "":
         ofile = "p.out"
 
-    with open(filename, 'r') as inputFile:
+
+    with open(inputFile, 'r') as inputFile:
         readlines = inputFile.read().splitlines()
     
+    outputs = findLines(readlines)
+    print(outputs)
+
     with open(ofile, 'w') as outfile:
-        pass
+        outfile.write(outputs)
 
-
-    for x in range(len(readlines)):
-        string = readlines[x]
-        if string == "-":
-            x += 1
-            out = []
-            temp = []
-            print(string)
-            while readlines[x] != "-":
-                print(readlines[x])
-                x += 1
-                temp.append(readlines[x])
-            print(f"x {x}")
-            print(string)
-            out = temp
-
-            out = "\n".join(out)
-            with open("p.out", 'a') as file:
-                file.write(out)
-
-            print(out)
-    
-    findfile(readlines, ofile)
+    #findfile(readlines, ofile)
 
 main()

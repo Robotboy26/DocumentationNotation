@@ -7,13 +7,6 @@ body {
             padding: 0 auto;
             text-align: left;
             }
-.temp2class {
-            width: 100%;
-            margin: 0 auto;
-            color: black;
-            text-align: left;
-            font-size: 14px;
-            }
 .header {
             background-color: #333;
             color: #fff;
@@ -30,6 +23,15 @@ body {
             margin: 0 auto;
             text-align: left;
             color: FFD0A0;
+            }
+.standardText {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            width: 100%; # 100% because it is 100% of the bodys width
+            background-color: #FFD0A0;
+            margin: 0 auto;
+            padding: 0 auto;
+            text-align: left;
             }
 .filename {
             font-size: 18px;
