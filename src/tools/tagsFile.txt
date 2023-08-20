@@ -1,5 +1,0 @@
--|1|highlightedBlock
-#-|1|commentBlock
-!--*|1|highlightedBlock|!--
----|1|highlightedBlock
----*-|1|highlightedBlock|---
