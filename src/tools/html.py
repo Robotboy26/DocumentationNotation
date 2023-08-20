@@ -37,12 +37,17 @@ def convertToHtml(inputFile, backgroundColor, normalColor, fontSize, width, heig
 
     inHighlightBlock = False
     inTextBlock = False
+    stared = False
     for line in lines:
         line = line.strip()
         if line.startswith("!") and line.endswith("!"):
             htmlLines.append('<div style="font-size: 32px; font-weight: bold; text-align: center;">') # open tag
             htmlLines.append(line.strip("!")) # write title
             htmlLines.append(closeTag) # close tag
+            continue
+
+        if line == "---" and stared:
+            htmlLines.append(closeTag)
             continue
 
         for tag in tags:
@@ -52,9 +57,6 @@ def convertToHtml(inputFile, backgroundColor, normalColor, fontSize, width, heig
                 #print(f"tagSplit: {tagSplit}")
                 print(f"lineS: {line.startswith(tagSplit[0])}\nlineE: {line.endswith(tagSplit[1])}")
                 if line.startswith(tagSplit[0]) and line.endswith(tagSplit[1]):
-                    if stared:
-                        htmlLines.append(closeTag)
-                        continue
                     htmlLines.append(closeTag)
                     inTextBlock = False
                     inHighlightBlock = True
@@ -91,6 +93,10 @@ def convertToHtml(inputFile, backgroundColor, normalColor, fontSize, width, heig
                 if tag in fullLineTags:
                     if line == fullLineTags[fullLineTags.index(tag)]:
                         isTag = True
+            if "*" in tag:
+                if line.startswith(tagSplit[0]) and line.endswith(tagSplit[1]):
+                    istTag = True
+
         
         if isTag:
             #htmlLines.append("</div>")
