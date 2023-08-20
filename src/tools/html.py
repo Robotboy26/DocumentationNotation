@@ -17,9 +17,21 @@ def convertToHtml(inputFile, backgroundColor, normalColor, fontSize, width, heig
     fullLineTags = ["-", "#-", "!--", "---"]
     tagshtml = []
 
-    closeTag = "</div>"
+    tags, fullLineTags, tagshtml = readTagsFile("tagsFile.txt")
 
-    title = "This is a title"
+    print(tags)
+    print(fullLineTags)
+    print(tagshtml)
+
+    closeTag = "</div>"
+    
+    Tline = lines[0]
+    Tline = Tline.strip()
+    if Tline.startswith("!") and Tline.startswith("!"):
+        title = Tline.strip("!")
+
+    print(title)
+    #title = "This is a title"
 
     htmlLines.append(f"""<html><head><title>{title}</title><link rel="stylesheet" href="styles.css"></head><body>""")
 
@@ -30,28 +42,44 @@ def convertToHtml(inputFile, backgroundColor, normalColor, fontSize, width, heig
         if line.startswith("!") and line.endswith("!"):
             htmlLines.append('<div style="font-size: 32px; font-weight: bold; text-align: center;">') # open tag
             htmlLines.append(line.strip("!")) # write title
-            htmlLines.append('</div>') # close tag
+            htmlLines.append(closeTag) # close tag
             continue
 
         for tag in tags:
+            print(f"tag: {tag}")
+            if "*" in tag:
+                tagSplit = tag.split("*")
+                #print(f"tagSplit: {tagSplit}")
+                print(f"lineS: {line.startswith(tagSplit[0])}\nlineE: {line.endswith(tagSplit[1])}")
+                if line.startswith(tagSplit[0]) and line.endswith(tagSplit[1]):
+                    htmlLines.append(closeTag)
+                    inTextBlock = False
+                    inHighlightBlock = True
+                    print("helllllll wpr;d")
+                    filename = line.strip("-")
+                    filename = filename.strip(" ")
+                    htmlLines.append(f'<div class="{tagshtml[tagNumber]}"><div class="filename">{filename}</div>')
+                    stared = True
+                    print(filename)
+                    continue
+                continue
+
             if tag in line:
-                #print(line)
-                #print(f"tag: {tag}")
+                print(f"line: {line}")
                 tagNumber = tags.index(tag)
                 if tag in fullLineTags:
                     #print("I am Here")
                     if line != fullLineTags[fullLineTags.index(tag)]:
                         #print("I am Here2")
                         continue
-
-                #print(f"tagNumber: {tagNumber}")
+                print(f"tagNumber: {tagNumber}")
                 if inHighlightBlock:
                     htmlLines.append(closeTag)
                     inHighlightBlock = False
                 else:
                     htmlLines.append(closeTag)
                     inTextBlock = False
-                    htmlLines.append(f'<div class="highlightedBlock"><p>') # also can use tagshtml[tagNumber] once it is filled out
+                    htmlLines.append(f'<div class="{tagshtml[tagNumber]}">')
                     inHighlightBlock = True
         
         isTag = False
@@ -62,6 +90,7 @@ def convertToHtml(inputFile, backgroundColor, normalColor, fontSize, width, heig
                         isTag = True
         
         if isTag:
+            #htmlLines.append("</div>")
             continue
 
 
@@ -76,6 +105,25 @@ def convertToHtml(inputFile, backgroundColor, normalColor, fontSize, width, heig
             htmlLines.append(f"{line}<br>")
 
     return "".join(htmlLines)
+
+def readTagsFile(filename):
+    with open(filename, 'r') as tagsFile:
+        readlines = tagsFile.read().splitlines()
+
+    Ttags = []
+    TfullLineTags = []
+    Ttagshtml = []
+
+    for x in range(len(readlines)):
+        line = readlines[x]
+        readlines[x] = line.split("|")
+        Ttags.append(readlines[x][0])
+        if readlines[x][1] == "1":
+            TfullLineTags.append(readlines[x][0])
+
+        Ttagshtml.append(readlines[x][2])
+
+    return Ttags, TfullLineTags, Ttagshtml
 
 def generateStyles(inputFile, backgroundColor, normalColor, fontSize, width, height):
     cssLines = []
@@ -107,6 +155,28 @@ def generateStyles(inputFile, backgroundColor, normalColor, fontSize, width, hei
             text-align: left;
             color: {normalColor};
             }}\n""")
+    cssLines.append(f""".commentBlock {{
+            background-color: #32631f;
+            border-radius: 8px;
+            padding: 12px;
+            line-height: 1.5;
+            font-size: {fontSize}px;
+            width: 100%; # 100% because it is 100% of the bodys width
+            margin: 0 auto;
+            text-align: left;
+            color: {normalColor};
+            }}\n""")
+    cssLines.append(f""".testBlock {{
+            background-color: #2d1769;
+            border-radius: 8px;
+            padding: 12px;
+            line-height: 1.5;
+            font-size: {fontSize}px;
+            width: 100%; # 100% because it is 100% of the bodys width
+            margin: 0 auto;
+            text-align: left;
+            color: {normalColor};
+            }}\n""")
     cssLines.append(f""".standardText {{
             font-family: Arial, sans-serif;
             font-size: {fontSize}px;
@@ -116,7 +186,13 @@ def generateStyles(inputFile, backgroundColor, normalColor, fontSize, width, hei
             padding: 0 auto;
             text-align: left;
             }}\n""")
-    cssLines.append(f""".filename {{
+    cssLines.append(f""".filename {{ 
+            background-color: #f705af;
+            position:relative;
+            left: 42%;
+            width: 16%;
+            text-align: center;
+            border-radius: 4px;
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 5px;

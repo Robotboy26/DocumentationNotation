@@ -24,6 +24,28 @@ body {
             text-align: left;
             color: FFD0A0;
             }
+.commentBlock {
+            background-color: #32631f;
+            border-radius: 8px;
+            padding: 12px;
+            line-height: 1.5;
+            font-size: 14px;
+            width: 100%; # 100% because it is 100% of the bodys width
+            margin: 0 auto;
+            text-align: left;
+            color: FFD0A0;
+            }
+.testBlock {
+            background-color: #2d1769;
+            border-radius: 8px;
+            padding: 12px;
+            line-height: 1.5;
+            font-size: 14px;
+            width: 100%; # 100% because it is 100% of the bodys width
+            margin: 0 auto;
+            text-align: left;
+            color: FFD0A0;
+            }
 .standardText {
             font-family: Arial, sans-serif;
             font-size: 14px;
@@ -33,7 +55,13 @@ body {
             padding: 0 auto;
             text-align: left;
             }
-.filename {
+.filename { 
+            background-color: #f705af;
+            position:relative;
+            left: 42%;
+            width: 16%;
+            text-align: center;
+            border-radius: 4px;
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 5px;

@@ -103,7 +103,7 @@ note: The 4 %define statments will be used later.
 BITS 16
 org 0x7C00 ; This is the standard bootloader start location and should not be changed
 
----
+--- mbr.asm -
 
 The next thing that our bootloader will do are a few things that should be set by default but it is best to explicitly set them.
 
