@@ -16,12 +16,14 @@ def convertToHtml(inputFile, backgroundColor, normalColor, fontSize, width, heig
     tags = ["-", "#-", "!--", "---"]
     fullLineTags = ["-", "#-", "!--", "---"]
     tagshtml = []
+    endTags = []
 
-    tags, fullLineTags, tagshtml = readTagsFile("tagsFile.txt")
+    tags, fullLineTags, tagshtml, endTags = readTagsFile("tagsFile.txt")
 
     print(tags)
     print(fullLineTags)
     print(tagshtml)
+    print(endTags)
 
     closeTag = "</div>"
     
@@ -45,39 +47,52 @@ def convertToHtml(inputFile, backgroundColor, normalColor, fontSize, width, heig
             htmlLines.append(line.strip("!")) # write title
             htmlLines.append(closeTag) # close tag
             continue
+        
+        isEndTag = False
+        for endtag in endTags:
+            #print(f"endtag: {endtag}")
+            #print(f"line: {line}")
+            if line == endtag and stared:
+                #print(f"yesssssssir")
+                htmlLines.append(closeTag)
+                isEndTag = True
 
-        if line == "---" and stared:
-            htmlLines.append(closeTag)
+        if isEndTag:
+            isEndTag = False
             continue
 
+        skip = False
         for tag in tags:
-            print(f"tag: {tag}")
+            #print(f"tag: {tag}")
             if "*" in tag:
                 tagSplit = tag.split("*")
                 #print(f"tagSplit: {tagSplit}")
-                print(f"lineS: {line.startswith(tagSplit[0])}\nlineE: {line.endswith(tagSplit[1])}")
+                #print(f"lineS: {line.startswith(tagSplit[0])}\nlineE: {line.endswith(tagSplit[1])}")
                 if line.startswith(tagSplit[0]) and line.endswith(tagSplit[1]):
                     htmlLines.append(closeTag)
                     inTextBlock = False
                     inHighlightBlock = True
-                    print("helllllll wpr;d")
-                    filename = line.strip("-")
+                    #print("helllllll wpr;d")
+                    filename = line.lstrip(f" {tagSplit[0]} ")
+                    filename = filename.rstrip(f" {tagSplit[1]} ")
                     filename = filename.strip(" ")
+                    tagNumber = tags.index(tag)
                     htmlLines.append(f'<div class="{tagshtml[tagNumber]}"><div class="filename">{filename}</div>')
                     stared = True
-                    print(filename)
+                    #print(f"filename: {filename}")
+                    skip = True
                     continue
                 continue
 
             if tag in line:
-                print(f"line: {line}")
+                #print(f"line: {line}")
                 tagNumber = tags.index(tag)
                 if tag in fullLineTags:
                     #print("I am Here")
                     if line != fullLineTags[fullLineTags.index(tag)]:
                         #print("I am Here2")
                         continue
-                print(f"tagNumber: {tagNumber}")
+                #print(f"tagNumber: {tagNumber}")
                 if inHighlightBlock:
                     htmlLines.append(closeTag)
                     inHighlightBlock = False
@@ -98,8 +113,9 @@ def convertToHtml(inputFile, backgroundColor, normalColor, fontSize, width, heig
                     istTag = True
 
         
-        if isTag:
+        if isTag or skip:
             #htmlLines.append("</div>")
+            skip = False
             continue
 
 
@@ -122,6 +138,7 @@ def readTagsFile(filename):
     Ttags = []
     TfullLineTags = []
     Ttagshtml = []
+    TendTags = []
 
     for x in range(len(readlines)):
         line = readlines[x]
@@ -131,8 +148,10 @@ def readTagsFile(filename):
             TfullLineTags.append(readlines[x][0])
 
         Ttagshtml.append(readlines[x][2])
+        if len(readlines[x]) > 3:
+            TendTags.append(readlines[x][3])
 
-    return Ttags, TfullLineTags, Ttagshtml
+    return Ttags, TfullLineTags, Ttagshtml, TendTags
 
 def generateStyles(inputFile, backgroundColor, normalColor, fontSize, width, height):
     cssLines = []
