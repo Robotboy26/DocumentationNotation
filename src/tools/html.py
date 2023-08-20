@@ -52,6 +52,9 @@ def convertToHtml(inputFile, backgroundColor, normalColor, fontSize, width, heig
                 #print(f"tagSplit: {tagSplit}")
                 print(f"lineS: {line.startswith(tagSplit[0])}\nlineE: {line.endswith(tagSplit[1])}")
                 if line.startswith(tagSplit[0]) and line.endswith(tagSplit[1]):
+                    if stared:
+                        htmlLines.append(closeTag)
+                        continue
                     htmlLines.append(closeTag)
                     inTextBlock = False
                     inHighlightBlock = True
