@@ -282,8 +282,10 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("you did set githubFetch defaulting False")
         enableGithubFetch = False
+    elif sys.argv[1] == "False":
+        enableGithubFetch = False
     else:
-        enableGithubFetch = sys.argv[1]
+        enableGithubFetch = True
 
     if len(sys.argv) < 3:
         print("you did not set a input file using default")
