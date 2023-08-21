@@ -280,18 +280,16 @@ if __name__ == "__main__":
     fileList = ["part1.dn"]
 
     if len(sys.argv) < 2:
-        print("you did set githubFetch defaulting False")
-        enableGithubFetch = False
-    elif sys.argv[1] == "False":
-        enableGithubFetch = False
-    else:
-        enableGithubFetch = True
-
-    if len(sys.argv) < 3:
         print("you did not set a input file using default")
         inputFile = "../sampleText/part1.dn"
     else:
-        inputFile = sys.argv[2]
+        inputFile = sys.argv[1]
+
+    if len(sys.argv) < 3:
+        print("you did set githubFetch defaulting False (not working right now)")
+        enableGithubFetch = False
+    else:
+        enableGithubFetch = sys.argv[2]
 
 
     if enableGithubFetch:
