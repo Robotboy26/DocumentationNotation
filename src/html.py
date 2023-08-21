@@ -1,5 +1,6 @@
 import re
 import urllib.request
+import sys
 from lxml import etree, html
 
 tab = "\t"
@@ -216,14 +217,14 @@ def generateStyles(inputFile, backgroundColor, normalColor, fontSize, width, hei
             }}\n""")
     cssLines.append(f""".filename {{ 
             background-color: #f705af;
-            position:relative;
-            left: 42%;
-            width: 16%;
-            text-align: center;
+            display: block;
+            width: fit-content;
+            padding: 3px 10px;
             border-radius: 4px;
             font-size: 18px;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin: 10px auto;
+            text-align: center;
             }}\n""")
     cssLines.append(f""".highlighted-text {{
             margin-top: 20px;
@@ -257,6 +258,7 @@ def generateStyles(inputFile, backgroundColor, normalColor, fontSize, width, hei
 
 def downloadFromWeb(urlList, fileList):
     for url in urlList:
+        print(f"Downloading File '{fileList[urlList.index(url)]}'")
         response = urllib.request.urlopen(url)
         data = response.read()
         text = data.decode('utf-8')
@@ -265,7 +267,6 @@ def downloadFromWeb(urlList, fileList):
     
 
 if __name__ == "__main__":
-    inputFile = "part1.dn"
     inputStyle = ""
     outputFile = "output.html"
     backgroundColor = "#28289C"
@@ -277,6 +278,19 @@ if __name__ == "__main__":
     enableGithubFetch = False
     urlList = ['https://raw.githubusercontent.com/Robotboy26/myOSBlog/main/docs/part1.dn']
     fileList = ["part1.dn"]
+
+    if len(sys.argv) < 2:
+        print("you did set githubFetch defaulting False")
+        enableGithubFetch = False
+    else:
+        enableGithubFetch = sys.argv[1]
+
+    if len(sys.argv) < 3:
+        print("you did not set a input file using default")
+        inputFile = "../sampleText/part1.dn"
+    else:
+        inputFile = sys.argv[2]
+
 
     if enableGithubFetch:
         downloadFromWeb(urlList, fileList)
