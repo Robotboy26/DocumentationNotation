@@ -3,3 +3,6 @@ styles.css
 output.html
 notPretty.html
 html.old
+env/
+src/data/
+src/.env
