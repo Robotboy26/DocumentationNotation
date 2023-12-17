@@ -2,7 +2,13 @@
 
 Before we start if you want the source code used or extra resources you can find them here {github-link} # Highlight
 
+<<<<<<< HEAD
 	What I am using:
+=======
+--0--
+    What I am using:
+--0--
+>>>>>>> a85b2e75b8974119e11f367832f48f729bea1588
 
 OS:
 -ubuntu22.04
