@@ -1,14 +1,7 @@
-<<<<<<< HEAD
-import urllib.request
-import sys
-from lxml import etree, html
-import os
-=======
 import os
 import sys
 import urllib.request
 from lxml import etree, html
->>>>>>> a85b2e75b8974119e11f367832f48f729bea1588
 
 from styles import generateStyle
 from conHtml import convertToHtml
@@ -45,7 +38,6 @@ def downloadFromWeb(urlList, fileList):
             print(f"failed to download a file, {e}")
 
     return downloadedFiles
-    
 
 def readGetFile(filePath):
     with open(filePath, "r") as getFile:
@@ -62,8 +54,6 @@ def readGetFile(filePath):
 
     cryptList = None
     return urlList, urlBase, cryptList
-
-
 
 def main():
 
@@ -86,11 +76,7 @@ def main():
     height = 0 # not used right now
 
     enableGithubFetch = False
-<<<<<<< HEAD
-    urlList, cryptList = readGetFile("data/internal/getFile.txt")
-=======
     urlList, urlBase, cryptList = readGetFile("data/internal/getFile.txt")
->>>>>>> a85b2e75b8974119e11f367832f48f729bea1588
     print(urlList)
 
     # get the files names from the list of urls
@@ -102,16 +88,6 @@ def main():
 
     print(f"fileList: {fileList}")
 
-
-<<<<<<< HEAD
-    # instead of sys.argv mabey change to use argparse at some point
-    if len(sys.argv) < 2:
-        print("you did not set a input file using default")
-        inputFile = "../sampleText/part1.dn"
-    else:
-        inputFile = sys.argv[1]
-=======
-    # instead of sys.argv change to use argparse at some point?
     if len(sys.argv) > 1:
         inputFile = sys.argv[1]
         cssContent = generateStyle(backgroundColor, normalColor, fontSize, width, height)
@@ -127,7 +103,6 @@ def main():
     else:
         print("you did not set a input file using default")
         inputFile = "../sampleText/part1.dn"
->>>>>>> a85b2e75b8974119e11f367832f48f729bea1588
 
     downloadedFiles = downloadFromWeb(urlList, fileList)
 

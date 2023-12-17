@@ -1,8 +1,8 @@
-__pycache__/
-styles.css
-output.html
-notPretty.html
-html.old
+src/styles.css
+src/output.html
+src/notPretty.html
+src/html.old
 env/
 src/data/
 src/.env
+src/__pycache__/

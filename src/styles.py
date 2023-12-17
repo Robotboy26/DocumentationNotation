@@ -38,12 +38,6 @@ def generateStyle(backgroundColor, normalColor, fontSize, width, height):
             text-align: left;
             color: {normalColor};
             }}\n""")
-<<<<<<< HEAD
-=======
-    cssLines.append(f""".toFix {{
-            color: #AA1511;
-            }}\n""")
->>>>>>> a85b2e75b8974119e11f367832f48f729bea1588
     cssLines.append(f""".orderedList
             background-color: #346792;
             border-radius: 8px;
