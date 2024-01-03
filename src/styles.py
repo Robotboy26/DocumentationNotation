@@ -41,7 +41,7 @@ def generateStyle(backgroundColor, normalColor, fontSize, width, height):
     cssLines.append(f""".orderedList
             background-color: #346792;
             border-radius: 8px;
-            padding: 12px;
+            padding: 4px;
             line-height: 1.5;
             font-size: {fontSize}px;
             width: 100%; # 100% because it is 100% of the bodys width

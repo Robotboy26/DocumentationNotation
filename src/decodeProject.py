@@ -5,8 +5,9 @@ def debug(text):
     if debugToggle:
         print(text)
 
-def convertToHtml(inputFile):
+def decodeProject(inputFile):
     htmlLines = []
+    shellCommands = []
 
     with open(inputFile, "r") as file:
         lines = file.read().splitlines()
@@ -23,13 +24,6 @@ def convertToHtml(inputFile):
 
     tags, fullLineTags, tagshtml, htmlTags, endTags = readTagsFile("data/internal/tagsFile.txt")
 
-    print(tags)
-    print(fullLineTags)
-    print(tagshtml)
-    print(endTags)
-
-    closeTag = "</div>"
-   
     titleLine = lines[0]
     titleLine = titleLine.strip()
     if titleLine.startswith("!") and titleLine.startswith("!"):
@@ -37,9 +31,8 @@ def convertToHtml(inputFile):
     else:
         title = "This is a title"
 
-    print(title)
-
-    htmlLines.append(f"""<html><head><title>{title}</title><link rel="stylesheet" href="styles.css"></head><body>""")
+    if not os.path.exists(title):
+        os.mkdir(title)
 
     inHighlightBlock = False
     inTextBlock = False
@@ -47,9 +40,6 @@ def convertToHtml(inputFile):
     for line in lines:
         line = line.strip()
         if line.startswith("!") and line.endswith("!"):
-            htmlLines.append('<div style="font-size: 32px; font-weight: bold; text-align: center;">') # open tag
-            htmlLines.append(line.strip("!")) # write title
-            htmlLines.append(closeTag) # close tag
             continue
         
         isEndTag = False
@@ -58,7 +48,6 @@ def convertToHtml(inputFile):
             debug(f"line: {line}")
             if line == endtag and stared:
                 debug(f"yesssssssir")
-                htmlLines.append(closeTag)
                 isEndTag = True
 
         if isEndTag:
@@ -73,15 +62,20 @@ def convertToHtml(inputFile):
                 debug(f"tagSplit: {tagSplit}")
                 debug(f"lineS: {line.startswith(tagSplit[0])}\nlineE: {line.endswith(tagSplit[1])}")
                 if line.startswith(tagSplit[0]) and line.endswith(tagSplit[1]):
-                    htmlLines.append(closeTag)
                     inTextBlock = False
                     inHighlightBlock = True
                     debug("helllllll wpr;d")
                     filename = line.lstrip(f" {tagSplit[0]} ")
                     filename = filename.rstrip(f" {tagSplit[1]} ")
                     filename = filename.strip(" ")
+                    print(f"!!!   Filename This is huge {filename}   !!!")
+                    if os.path.exists(f"{title}/{filename}"):
+                        with open(f"{title}/{filename}", 'a') as F:
+                            pass # append lines to file
+                    elif not os.path.exists(f"{title}/{filename}"):
+                        with open(f"{title}/{filename}", 'w') as F:
+                            pass # new file to start writing files too
                     tagNumber = tags.index(tag)
-                    htmlLines.append(f'<div class="{tagshtml[tagNumber]}"><div class="filename">{filename}</div>')
                     stared = True
                     debug(f"filename: {filename}")
                     skip = True
@@ -98,12 +92,9 @@ def convertToHtml(inputFile):
                         continue
                 debug(f"tagNumber: {tagNumber}")
                 if inHighlightBlock:
-                    htmlLines.append(closeTag)
                     inHighlightBlock = False
                 else:
-                    htmlLines.append(closeTag)
                     inTextBlock = False
-                    htmlLines.append(f'<div class="{tagshtml[tagNumber]}">')
                     inHighlightBlock = True
         
         isTag = False
@@ -118,22 +109,20 @@ def convertToHtml(inputFile):
 
         
         if isTag or skip:
-            #htmlLines.append("</div>")
             skip = False
             continue
 
 
 
         if inHighlightBlock or inTextBlock:
-            try:
-                print(htmlTags)
-                print(tagNumber)
-                print(f"<{htmlTags[tagNumber]}>{line}</{htmlTags[tagNumber]}><br>")
-                htmlLines.append(f"<{htmlTags[tagNumber]}>{line}</{htmlTags[tagNumber]}><br>")
-            except:
-                htmlLines.append(f"{line}<br>")
+                debug(htmlTags)
+                debug(tagNumber)
+                if tagNumber == 4: # this is when there is a file (may make dict filename with lines)
+                    shellCommands.append(line)
+                if tagNumber == 0:
+                    pass
         elif not inTextBlock:
-            htmlLines.append(f'<div class="standardText"><p>')
             inTextBlock = True
 
-    return "".join(htmlLines)
+    print(f"shellCommands: {shellCommands}")
+    return "\n".join(shellCommands)

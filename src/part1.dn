@@ -1,243 +1,228 @@
-		!Make your own x86 64-bit operating system!
+!Make your own x86 64-bit operating system!
 
-Before we start if you want the source code used or extra resources you can find them here {github-link} # Highlight
+Hello world, I am going to document my journey on making my own x86 64-bit operating system using only assembly (at least for the time being).
 
-<<<<<<< HEAD
-	What I am using:
-=======
---0--
-    What I am using:
---0--
->>>>>>> a85b2e75b8974119e11f367832f48f729bea1588
+Ok, let's start with the setup of the project and go over what I am using.
 
 OS:
--ubuntu22.04
+  -Ubuntu22.04
 
 Tools:
--Git
--Qemu
--Nasm
--NeoVim # You can use whatever editor you want but I use NeoVim
+  -Git
+  -Qemu (for emulation)
+  -Nasm (the assembler)
+  -Neovim (or the editor of your choice)
 
-	Command to install the tools used:
+Throughout this project this project I will use many different sources and references to help me:
+  -Pure64 (https://github.com/ReturnInfinity/Pure64)
+  -BareMetal-OS (https://github.com/ReturnInfinity/BareMetal-OS)
+  -myOS-Archive (some of my old attempts at doing this project) (https://github.com/Robotboy26/myOS-Archive)
+
+Before we get too far into there are some things that it would be helpful to know throughout this project. Although there are brief descriptions, these are more to remind you about these topics instead of teaching them. With that being said here are some words you should know and some websites you can find information on.
+
+# Put a bunch of stuff here and then sort abc later
+BIOS - <website here>
+<put some more words here>
+VM - <website here>
+<put some more words here>
+Emulator - <>
+<>
+
+
+Install the tools I am using:
 
 -
-sudo apt install git qemu qemu-system-x86 nasm neovim
+sudo apt install git qemu qemu-system-x86 nasm Neovim
 -
 
-	Enviroment Setup (open up a terminal and run these commands to setup the enviroment):
+Environment setup, open up your terminal (‘Ctrl-Alt-t’ for Ubuntu):
+if you want to get started with the latest code
 
 -
-cd
-cd Downloads # Navigate to the directory where you would like the project
-mkdir mOS # Or whatever you want to call the project
-cd mOS
-touch .gitignore
-echo "src/bin" > .gitignore
+git clone https://github.com/Robotboy26/myOS
+cd myOS
+-
+
+if you want to follow along with me
+
+-
+mkdir myOS
+cd myOS
 mkdir src
 cd src
-mkdir bin # This will be for the compiled assembly files
-touch mbr.asm # This will be the first part of the bootloader
-touch bootloader.asm # This will be the second part the bootloader
-touch os.asm # This file will be the payload for the bootloader
-touch qemu.sh # This file will setup the virtual machine with you operating system
-ls
+mkdir boot
+touch boot/mbr.asm
+touch boot/bootloader.asm
+touch boot/os.asm
 -
 
-	If everything worked you should see something like this (if you copy and pasted from above):
+We are now going to create a shell file that will automatically compile the source and then load it onto a virtual drive and launch it with Qemu (CPU emulation). We are going to name this file "qemu.sh". In this file, we are first going to remove any past binaries and then assemble 3 files using Nasm. These files are "mbr.asm" (Master Boot Record). This will be a 512-byte file that will be the first stage of our bootloader. The MBR will (roughly) start in 16-bit mode then elevate to 32-bit, then 64-bit mode. Somewhere in there, the MBR will activate the A20 line (I will explain this later). Finally, the MBR will read the bootloader file into memory and run it. The second file will be "bootloader.asm". This is the second part of our bootloader that will be loaded by the MBR. This second bootloader will do a great many things. The most notable in my opinion is the IDT but we will get to that much later. Finally will assemble the actual operating system code. Right after assembling, we will combine the second part of the bootloader and all of the operating system code into one file (this will be important later).
 
-#-
-{user}@{computerID}:~$ cd
-cd Downloads # Navigate to the directory where you would like the project
-mkdir mOS # Or whatever you want to call the project
-cd mOS
-touch .gitignore
-echo "src/bin" > .gitignore
-mkdir src
-cd src
-mkdir bin # This will be for the compiled assembly files
-touch mbr.asm # This will be the first part of the bootloader
-touch bootloader.asm # This will be the second part the bootloader
-touch os.asm # This file will be the payload for the bootloader
-touch qemu.sh # This file will setup the virtual machine with you operating system
-ls
-bin  bootloader.asm  mbr.asm  os.asm  qemu.sh
-{user}@{computerID]:~/Downloads/mOS/src$
-#-
+After assembling the source code the build script will use the linux dd command to create a virtual disk with 128 megabytes. We will then use the dd command to write the MBR to the first sector of the virtual drive (a sector is 512 bytes (we will go over this later)). We will also use the dd command to write the rest of the code in the newly combined file containing the compiled second bootloader stage and operating system code. Finally we will use the Qemu emulator to launch the operating system after mounting a virtual drive with the operating system inside.
 
-	Now enter the qemu.sh file with your favorite editor:
-
-#-
-nvim qemu.sh
-#-
-
-	Using your favorite editor add this to the qemu.sh file:
-
-!-- qemu.sh
-echo "started VM"
-
+--- qemu.sh -
 rm -r bin
 mkdir bin
 
-nasm mbr.asm -o bin/mbr.bin
-nasm bootloader.asm -o bin/bootloader.bin
-nasm os.asm -o bin/os.asm
-sudo dd if=/dev/zero of=bin/disk.img count=8 bs=1048576
+nasm src/boot/mbr.asm -o bin/mbr.bin
+nasm src/boot/bootloader.asm -o bin/bootloader.bin
+nasm src/os.asm -o bin/os.asm
 cat bin/bootloader.bin bin/os.bin > bin/mos.bin
+sudo dd if=/dev/zero of=bin/disk.img count=8 bs=1048576
 sudo dd if=bin/mbr.bin of=bin/disk.img conv=notrunc
 sudo dd if=bin/mos.bin of=bin/disk.img bs=512 seek=16 conv=notrunc
 sudo qemu-system-x86_64 -drive format=raw,file=bin/disk.img
-!--
+---
 
-	Quick overview of the MBR:
+Save and close qemu.sh and create a new file in the boot directory called mbr.asm that is what we will be working on next.
 
-The MBR or Master Boot Record will setup the enviroment for the second stage of our bootloader which will then setup the enviroment for the operating system. The MBR will start in 16 bit mode at the memory offset of 0x7C00 ('0x' before a number mean that the number is in hexadecimal). All x86 CPUs start in 16 bit mode for legacy reason this will be a common theme that our bootloader will have to deal with. -The memory offset location that the bootloader starts with is also for legacy reasons- but in terms of our bootloader the memory offset has little effect whereas we will have to bring the cpu up to 64 bit mode from the current 16 bit mode.
-
-The very first line of assembly in our bootloader will be telling our assembler that the following code is 16 bit assembly and the second line of code will specify the memory offset that our bootloader will start at.
-
-note: You use a ";" to mark a comment in nasm assembly.
-note: The 4 %define statments will be used later.
+-
+nvim boot.mbr.asm
+-
 
 --- mbr.asm -
-%define DAP_SECTORS 64
-%define DAP_STARTSECTOR 16
-%define DAP_ADDRESS 0x8000
-%define DAP_SEGMENT 0x0000
 
+%define SECTORS 64
+%define STARTSECTOR 16
+%define ADDRESS 0x8000
+%define SEGMENT 0x0000
 
+---
+
+First, we will define 4 constants that will be used later.
+
+--- mbr.asm -
 
 BITS 16
-org 0x7C00 ; This is the standard bootloader start location and should not be changed
+org 0x7C00 ; This is the normal bootloader start location and should not be changed.
+ 
+entry:  ; most of this should be set by default but it is best to explicitly set it.
+    cli   			 ; Disable interrupts
+    cld   			 ; Clear direction flag
+        	; reset the stack
+    xor eax, eax ; floor eax
+    mov ss, ax
+    mov es, ax
+    mov ds, ax
+    mov sp, 0x7C00   ; the stack moves down from this location.
+    sti   			 ; Enable interrupts
 
 ---
 
-The next thing that our bootloader will do are a few things that should be set by default but it is best to explicitly set them.
+Now we will do a few more things first tell the NASM (the assembler) that we will be writing a 16-bit assembly. You might be thinking "Wait, why would we use 16-bit assembly? I thought we were making a 64-bit operating system". The reason why we start with 16-bit is because even though modern CPUs can run 64-bit there was a time when 16-bit was the only thing they could run and for compatibility reasons, we still started in 16-bit mode. This might sound like a bad thing, that we have to go through 16-bit assembly before we can use 64-bit assembly and in some regards this is true it does make it a bit more annoying. One of the benefits of starting in 16-bit mode is that you have access to BIOS interrupts; these will make it much easier to do many things we will talk about shortly.
 
---- mbr.asm -
-entry:
-	cli				; Disable interrupts.
-	cld				; Clear direction flag.
-	xor eax, eax
-	mov ss, ax
-	mov es, ax
-	mov ds, ax
-	mov sp, 0x7C00                  ; The stack moves down from this location.
-	sti				; Enable interrupts.
+The 2nd line (in this segment) "org 0x7C00" is the normal offset for where the bootloader starts meaning this is where the BIOS hands off control to the bootloader. The next part "entry:" is called a label; it is not converted to assembly but is instead used by the assembler to do more complex things that are normally possible in assembly. Labels are mostly used when doing jumps as you will see later but in this situation, this label is never used to jump to or anything like that. It is instead just more for the person reading the code to better tell what is going on and segment the code to make it easier to digest. As the comment on this line says "Most of this should be set by default but it is best to explicitly set it" This is just telling you that the code within this label is told by the indent (although the indent is not required by the assembler I feel it is best to show it with an indent).
 
----
+Let's get into what these next lines are doing, hopefully, it should be pretty self-explanatory. I will quickly go over it. The command "cli" is used to disable interrupts. This is specifically talking about hardware interrupts which we will fully cover later so you don't have to worry about it too much right now but for a short example hardware interrupts include things like the computer clock, the keyboard, and the mouse. The next line "cld" is the command to clear the directional flag <add more stuff here>. The next few lines up until "sti'' have to do with resetting the stack if you do not know the stack it's a FILO (First In Last Out) memory structure. This is best explained with an example. Think about a stack of plates where you write a number onto each plate, you put one plate down then 2 plates down and instead of being able to take off the first plate you first need to take off the second plate or in other words, the first plate you put down is the last one you will take off<Provide a better example or a link>. How you reset we reset the stack and it is pretty simple first the line "xor eax, eax" This will floor the number if you don't know what that means it just means set the number to zero. You might be wondering why we xor eax with itself instead of doing something like mov eax, 0. The reason why we use xor eax, eax is just because it is "safer" and it's just the correct way to do it. Once we have zero in the eax register we can move the eax register into other registers to also set them to zero. Again you might be wondering why we do it this way and it's mostly just because it's the accepted way to do it. we will set the ss, es, and ds registers to zero. These registers are <add a description for these registers>. And we will set the sp or stack pointer register to 0x7C00 (also known as where the bootloader starts) and the stack will move down meaning the sp register will get smaller as you add things to the stack.
 
-Next we will store the drive number that the computer booted from (this is stored in the DL register by the bios on startup).
+In this segment of code we will first save the drive number which was passed by the BIOS into the dl register. The next 4 lines of code will set up the serial port. This is strictly necessary but will be very helpful for any debugging you'll want to do later. Setting up the serial port in 16-bit assembly is fairly simple due to the fact that we still have BIOS interrupts to work with. The rest of the serial port setup is pretty self-evident from the code comments.
 
---- mbr.asm -
-	mov [DriveNumber], dl		; The bios stored the drive number in the DL register on system startup.
+— mbr.asm -
 
----
+    mov [DriveNumber], dl   	 ; BIOS passes drive number in dl
 
-After storeing the drive number into memory we will now configure serial port 0 with the help of a bios interupt (this will be useful for debugging later).
+    ; reference https://www.ctyme.com/intr/int-14.htm
+    mov ah, 0
+    mov al, 11100011b   ; 9600bps, no parity, 1 stop bit, 8 data bits
+    mov dx, 0   		 ; Serial port 0
+    int 0x14   		 ; Configure serial port
 
---- mbr.asm -
-	mov ah, 0
-	mov al, 11100011b		; 9600bps, no parity, 1 stop bit, 8 data bits.
-	mov dx, 0			; Serial port 0.
-	int 0x14			; Configure serial port.
+—
 
----
+We will now enable the A20 line. We enable the A20 line because it will give us access to memory over one megabyte <double check>. It might seem weird that we have to enable the A20 line, why would you not want access to over one megabyte of memory <double check>. The reason why we need to enable it is because of more legacy reasons. The specific reason for this legacy feature is because at one point some Dos programs used the memory looping feature available when computers only had one megabyte meaning when computers came along that had more than one megabyte making these Dos programs no longer function. I’m not sure who thought that making programs that rely on the looping of memory was a good idea but here we are.
 
-The next thing the bootloader will do is enable the A20 line, this will give access to the full amount of memory for the system. The A20 line is disabled by default for legacy reasons and limits the system memory to -1mib-.
+The hard thing about enabling the A20 line is that there are a few different ways to enable it and there is no way to find out what way your specific CPU uses so the only way you can enable the A20 line is to guess and check. With the few ways to enable the A20 line it goes a little something like this: if way one doesn't work then way two probably will and if way 2 doesn’t work why 3 will work unless of course the CPU does not have an A20. One way we can kinda cheat this is to just use the third method from the start (while this might not be the recommended method in a production environment it should be fine for our little operating system running in a VM).
 
---- mbr.asm -
-; Enable the A20 line -add site talking about the A20 line-
+— mbr.asm -
+
+; Enable the A20 line
 setA20:
-	in al, 0x64
-	test al, 0x02
-	jnz set_A20
-	mov al, 0xD1
-	out 0x64, al
-
+    in al, 0x64
+    test al, 0x02
+    jnz setA20
+    mov al, 0xD1
+    out 0x64, al
 checkA20:
-	in al, 0x64
-	test al, 0x02
-	jnz check_A20
-	mov al, 0xDF
-	out 0x60, al
+    in al, 0x64
+    test al, 0x02
+    jnz checkA20
+    mov al, 0xDF
+    out 0x60, al
 
----
+    mov si, msgLoad
+    call printString16
 
-Now we need to load the 2nd stage of our bootloader lucky we have access to bios interupts, we will also now be using the 4 %define statment from before.
+—
 
---- mbr.asm -
-; Read the 2nd stage boot loader into memory.
-mov ah, 0x42			; Extended Read
-mov dl, [DriveNumber]		; Http://www.ctyme.com/intr/rb-0708.htm
-mov si, DAP
-int 0x13
-jc readFail
+At the end where we load the message into the SI register and then call printString16 this will print out the text loaded into the SI register but we have not gotten to where we declare that function yet. The print function will happen so fast that you will never see it but if anything goes wrong and the code stops you will be able to see these messages (and it will print them out to the serial port) so they are nice for debugging that you will inevitably have to do.
 
-; Quick check to make sure the 2nd stage bootloader was read.
-mov ax, [0x8006]
-cmp ax, 0x3436			; Compare the signature
-jne signitureFail
 
-mov si, msgOK
-call print16
 
----
 
-We will now jump from 16 bit real mode and enter 32-bit mode protected mode.
+    mov cx, 0x4000 - 1   	 ; Start looking from here
 
---- mbr.asm -
-; At this point we are done with real mode and BIOS interrupts. Jump to 32-bit mode.
-cli				; No more interrupts
-lgdt [cs:GDTR32]		; Load GDT register
-mov eax, cr0
-or al, 0x01			; Set protected mode bit
-mov cr0, eax
-jmp 8:0x8000			; Jump to 32-bit protected mode
+    ; Read the 2nd stage boot loader into memory.
+    mov ah, 0x42   		 ; Extended Read
+    mov dl, [DriveNumber]   	 ; http://www.ctyme.com/intr/rb-0708.htm
+    mov si, DAP
+    int 0x13
+    jc read_fail
 
-readFail:
-	mov si, msgReadFail
-	call print16
-	jmp halt
-signatureFail:
-	mov si, msgSignatureFail
-	call print16
+    ; Verify that the 2nd stage boot loader was read.
+    mov ax, [0x8006]
+    cmp ax, 0x3436   		 ; Compare the checksum
+    jne sig_fail
+
+    mov si, msg_OK
+    call print_string_16
+
+    ; At this point we are done with real mode and BIOS interrupts. Jump to 32-bit mode.
+    cli   			 ; No more interrupts
+    lgdt [cs:GDTR32]   	 ; Load GDT register
+    mov eax, cr0
+    or al, 0x01   		 ; Set protected mode bit
+    mov cr0, eax
+    jmp 8:0x8000   		 ; Jump to 32-bit protected mode
+
+read_fail:
+    mov si, msg_ReadFail
+    call print_string_16
+    jmp halt
+sig_fail:
+    mov si, msg_SigFail
+    call print_string_16
 halt:
-	hlt
-	jmp halt
+    hlt
+    jmp halt
 
----
-
-You might notice that we have used a funcion called print16 we will impliment that now
-
---- mbr.asm -
 
 ; 16-bit function to output a string to the serial port
-; Move that start address of the string to the SI register
-print16:			; Output string in SI to screen
-	pusha
-	mov dx, 0			; Port 0
+; IN:    SI - Address of start of string
+print_string_16:   		 ; Output string in SI to screen
+    pusha
+    mov dx, 0   		 ; Port 0
 .repeat:
-	mov ah, 0x01			; Serial - Write character to port
-	lodsb				; Get char from string
-	cmp al, 0
-	je .done			; If char is zero, end of string
-	int 0x14			; Output the character
-	jmp short .repeat
+    mov ah, 0x01   		 ; Serial - Write character to port
+    lodsb   			 ; Get char from string
+    cmp al, 0
+    je .done   		 ; If char is zero, end of string
+    int 0x14   		 ; Output the character
+    jmp short .repeat
 .done:
-	popa
-	ret
+    popa
+    ret
 ;------------------------------------------------------------------------------
 
 align 16
-GDTR32:					; Global Descriptors Table Register
-dw gdt32_end - gdt32 - 1		; Limit of GDT (size minus one)
-dq gdt32				; Linear address of GDT
+GDTR32:   				 ; Global Descriptors Table Register
+dw gdt32_end - gdt32 - 1   	 ; limit of GDT (size minus one)
+dq gdt32   			 ; linear address of GDT
 
 align 16
 gdt32:
-dw 0x0000, 0x0000, 0x0000, 0x0000	; Null descriptor
-dw 0xFFFF, 0x0000, 0x9A00, 0x00CF	; 32-bit code descriptor
-dw 0xFFFF, 0x0000, 0x9200, 0x00CF	; 32-bit data descriptor
+dw 0x0000, 0x0000, 0x0000, 0x0000    ; Null descriptor
+dw 0xFFFF, 0x0000, 0x9A00, 0x00CF    ; 32-bit code descriptor
+dw 0xFFFF, 0x0000, 0x9200, 0x00CF    ; 32-bit data descriptor
 gdt32_end:
 
 msg_Load db 10, "MBR ", 0
@@ -256,54 +241,14 @@ times 476-$+$$ db 0
 align 4
 
 DAP:
-	db 0x10
-	db 0x00
-	dw DAP_SECTORS
-	dw DAP_ADDRESS
-	dw DAP_SEGMENT
-	dq DAP_STARTSECTOR
+    db 0x10
+    db 0x00
+    dw SECTORS
+    dw ADDRESS
+    dw SEGMENT
+    dq STARTSECTOR
 
 times 510-$+$$ db 0
 
 sign dw 0xAA55
 
-VBEModeInfoBlock: equ 0x5C00
-; VESA
-; Mandatory information for all VBE revisions
-;VBEModeInfoBlock.ModeAttributes		equ VBEModeInfoBlock + 0	; DW - mode attributes
-;VBEModeInfoBlock.WinAAttributes		equ VBEModeInfoBlock + 2	; DB - window A attributes
-;VBEModeInfoBlock.WinBAttributes		equ VBEModeInfoBlock + 3	; DB - window B attributes
-;VBEModeInfoBlock.WinGranularity		equ VBEModeInfoBlock + 4	; DW - window granularity in KB
-;VBEModeInfoBlock.WinSize		equ VBEModeInfoBlock + 6	; DW - window size in KB
-;VBEModeInfoBlock.WinASegment		equ VBEModeInfoBlock + 8	; DW - window A start segment
-;VBEModeInfoBlock.WinBSegment		equ VBEModeInfoBlock + 10	; DW - window B start segment
-;VBEModeInfoBlock.WinFuncPtr		equ VBEModeInfoBlock + 12	; DD - real mode pointer to window function
-;VBEModeInfoBlock.BytesPerScanLine	equ VBEModeInfoBlock + 16	; DW - bytes per scan line
-; Mandatory information for VBE 1.2 and above
-;VBEModeInfoBlock.XResolution		equ VBEModeInfoBlock + 18	; DW - horizontal resolution in pixels or characters
-;VBEModeInfoBlock.YResolution		equ VBEModeInfoBlock + 20	; DW - vertical resolution in pixels or characters
-;VBEModeInfoBlock.XCharSize		equ VBEModeInfoBlock + 22	; DB - character cell width in pixels
-;VBEModeInfoBlock.YCharSize		equ VBEModeInfoBlock + 23	; DB - character cell height in pixels
-;VBEModeInfoBlock.NumberOfPlanes		equ VBEModeInfoBlock + 24	; DB - number of memory planes
-;VBEModeInfoBlock.BitsPerPixel		equ VBEModeInfoBlock + 25	; DB - bits per pixel
-;VBEModeInfoBlock.NumberOfBanks		equ VBEModeInfoBlock + 26	; DB - number of banks
-;VBEModeInfoBlock.MemoryModel		equ VBEModeInfoBlock + 27	; DB - memory model type
-;VBEModeInfoBlock.BankSize		equ VBEModeInfoBlock + 28	; DB - bank size in KB
-;VBEModeInfoBlock.NumberOfImagePages	equ VBEModeInfoBlock + 29	; DB - number of image pages
-;VBEModeInfoBlock.Reserved		equ VBEModeInfoBlock + 30	; DB - reserved (0x00 for VBE 1.0-2.0, 0x01 for VBE 3.0)
-; Direct Color fields (required for direct/6 and YUV/7 memory models)
-;VBEModeInfoBlock.RedMaskSize		equ VBEModeInfoBlock + 31	; DB - size of direct color red mask in bits
-;VBEModeInfoBlock.RedFieldPosition	equ VBEModeInfoBlock + 32	; DB - bit position of lsb of red mask
-;VBEModeInfoBlock.GreenMaskSize		equ VBEModeInfoBlock + 33	; DB - size of direct color green mask in bits
-;VBEModeInfoBlock.GreenFieldPosition	equ VBEModeInfoBlock + 34	; DB - bit position of lsb of green mask
-;VBEModeInfoBlock.BlueMaskSize		equ VBEModeInfoBlock + 35	; DB - size of direct color blue mask in bits
-;VBEModeInfoBlock.BlueFieldPosition	equ VBEModeInfoBlock + 36	; DB - bit position of lsb of blue mask
-;VBEModeInfoBlock.RsvdMaskSize		equ VBEModeInfoBlock + 37	; DB - size of direct color reserved mask in bits
-;VBEModeInfoBlock.RsvdFieldPosition	equ VBEModeInfoBlock + 38	; DB - bit position of lsb of reserved mask
-;VBEModeInfoBlock.DirectColorModeInfo	equ VBEModeInfoBlock + 39	; DB - direct color mode attributes
-; Mandatory information for VBE 2.0 and above
-;VBEModeInfoBlock.PhysBasePtr		equ VBEModeInfoBlock + 40	; DD - physical address for flat memory frame buffer
-;VBEModeInfoBlock.Reserved1		equ VBEModeInfoBlock + 44	; DD - Reserved - always set to 0
-;VBEModeInfoBlock.Reserved2		equ VBEModeInfoBlock + 48	; DD - Reserved - always set to 0
-
-; EOF
