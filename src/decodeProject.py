@@ -1,6 +1,8 @@
+import os
+import pdb
 from readTagFile import readTagsFile
 
-debugToggle = False
+debugToggle = True
 def debug(text):
     if debugToggle:
         print(text)
@@ -20,7 +22,7 @@ def decodeProject(inputFile):
     tagshtml = []
     htmlTags = []
     endTags = []
-    tagNumber = 0
+    tagNumber = None
 
     tags, fullLineTags, tagshtml, htmlTags, endTags = readTagsFile("data/internal/tagsFile.txt")
 
@@ -37,7 +39,10 @@ def decodeProject(inputFile):
     inHighlightBlock = False
     inTextBlock = False
     stared = False
+    inFile = False
+    inFileName = None
     for line in lines:
+        # pdb.set_trace()
         line = line.strip()
         if line.startswith("!") and line.endswith("!"):
             continue
@@ -69,12 +74,15 @@ def decodeProject(inputFile):
                     filename = filename.rstrip(f" {tagSplit[1]} ")
                     filename = filename.strip(" ")
                     print(f"!!!   Filename This is huge {filename}   !!!")
+                    # create the file
                     if os.path.exists(f"{title}/{filename}"):
                         with open(f"{title}/{filename}", 'a') as F:
                             pass # append lines to file
                     elif not os.path.exists(f"{title}/{filename}"):
                         with open(f"{title}/{filename}", 'w') as F:
                             pass # new file to start writing files too
+                    inFile = True
+                    inFileName = filename
                     tagNumber = tags.index(tag)
                     stared = True
                     debug(f"filename: {filename}")
@@ -85,6 +93,8 @@ def decodeProject(inputFile):
             if tag in line:
                 debug(f"line: {line}")
                 tagNumber = tags.index(tag)
+                if tagNumber == 0: # save anything inside bash tags
+                    shellCommands.append(line)
                 if tag in fullLineTags:
                     debug("I am Here")
                     if line != fullLineTags[fullLineTags.index(tag)]:
@@ -93,6 +103,7 @@ def decodeProject(inputFile):
                 debug(f"tagNumber: {tagNumber}")
                 if inHighlightBlock:
                     inHighlightBlock = False
+                    inFile = False
                 else:
                     inTextBlock = False
                     inHighlightBlock = True
@@ -115,12 +126,11 @@ def decodeProject(inputFile):
 
 
         if inHighlightBlock or inTextBlock:
-                debug(htmlTags)
-                debug(tagNumber)
-                if tagNumber == 4: # this is when there is a file (may make dict filename with lines)
-                    shellCommands.append(line)
-                if tagNumber == 0:
-                    pass
+                if inFile:
+                    with open(f"{title}/{inFileName}", 'a') as F:
+                        F.write(line)
+                        F.write("\n")
+                debug(line)
         elif not inTextBlock:
             inTextBlock = True
 
